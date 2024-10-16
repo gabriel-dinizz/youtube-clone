@@ -1,7 +1,7 @@
 // gsc files interaction //  track local file interactions
 
 import { Storage } from '@google-cloud/storage';
-import fs from 'fs';
+import fs, { lchown } from 'fs';
 import ffmpeg from 'fluent-ffmpeg';
 
 const storage = new Storage();
@@ -17,4 +17,20 @@ const localFilePathProcessed = 'video_processed.mp4';
 export function createLocalDirectories() {
     ensureDirectoryExistence(localFilePath);
     ensureDirectoryExistence(localFilePathProcessed);
+}
+
+export function convertVideo(rawVideoName: string, processedVideoName: string) {
+    return new Promise((resolve, reject) => {
+        ffmpeg(`${localRawVideoPath}/${rawVideoName}`)
+        .outputOptions("vf", "scale=1:360") // 360p
+        .on("end", function () {
+            console.log("Processing finished !");
+            resolve();
+        })
+        .on("error", function (err) {
+            console.log("Error: ", err);
+            reject(err);
+        })
+        .save(`${localProcessedVideoPath}/${processedVideoName}`);
+    });
 }
