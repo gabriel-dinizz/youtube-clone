@@ -47,3 +47,13 @@ export async function downloadRawVideo(fileName: string) {
     );
   }
   
+  export async function uploadProcessedVideo(fileName: string) {
+    const bucket = storage.bucket(processedVideoBucketName);
+
+    //Upload the video to bucket
+
+    await storage.bucket(processedVideoBucketName)
+    .upload(`${localProcessedVideoPath}/${fileName} upload to gs ${processedVideoBucketName}/${fileName}`);
+
+    await bucket.file(fileName).makePublic(); // make the video public
+  }
