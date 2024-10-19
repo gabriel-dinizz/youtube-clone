@@ -11,6 +11,7 @@ const processedVideoBucketName = 'youtube-clone-processed-videos';
 
 const localFilePath = 'video.mp4';
 const localFilePathProcessed = 'video_processed.mp4';
+const localRawVideoPath = './raw_videos';
 
 // Creates local directories for the raw and processed videos
 
@@ -31,7 +32,7 @@ export function convertVideo(rawVideoName: string, processedVideoName: string) {
             console.log("Error: ", err);
             reject(err);
         })
-        .save(`${localProcessedVideoPath}/${processedVideoName}`);
+        .save(`${uploadProcessedVideo}/${processedVideoName}`);
     });
 }
 
@@ -53,7 +54,7 @@ export async function uploadProcessedVideo(fileName: string) {
     //Upload the video to bucket
 
     await storage.bucket(processedVideoBucketName)
-    .upload(`${localProcessedVideoPath}/${fileName} upload to gs ${processedVideoBucketName}/${fileName}`);
+    .upload(`${uploadProcessedVideo}/${fileName} upload to gs ${processedVideoBucketName}/${fileName}`);
 
     await bucket.file(fileName).makePublic(); // make the video public
   }
@@ -64,7 +65,7 @@ export function deleteRawVideo(fileName: string){
 }
 
 export function deleteProcessedVideo(fileName: string){
-  return deleteFile(`${localProcessedVideoPath}/${fileName}`);  
+  return deleteFile(`${uploadProcessedVideo}/${fileName}`);  
 }
 
 function deleteFile(filePath: string): Promise<void> {
