@@ -85,3 +85,10 @@ function deleteFile(filePath: string): Promise<void> {
     }
   });
 }
+
+function ensureDirectoryExistence(filePath: string) {
+  if (!fs.existsSync(filePath)) {
+    fs.mkdirSync(filePath, { recursive: true }); // recursive: true creates nested directories
+    console.log(`Directory created at ${filePath}`);
+  }
+}
