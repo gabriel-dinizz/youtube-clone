@@ -17,7 +17,7 @@ export function createLocalDirectories() {
     ensureDirectoryExistence(localFilePathProcessed);
 }
 
-export function convertVideo(rawVideoName, processedVideoName) {
+export function detVideo(rawVideoName, processedVideoName) {
     return new Promise((resolve, reject) => {
         ffmpeg(`${localRawVideoPath}/${rawVideoName}`)
             .outputOptions("vf", "scale=1:360") // 360p
