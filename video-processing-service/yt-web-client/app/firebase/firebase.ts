@@ -7,3 +7,11 @@ const firebaseConfig = {
     projectId: "<your projectId>",  
     appId: "<your appId>",
 };
+
+const app initilizeApp(firebaseConfig);  // initialize the app with the firebaseConfig object
+
+const auth = getAuth(app);  // get the auth object from the app
+
+export function signInWithGoogle() {
+    return signInWithGoogle(auth, new GoogleAuthProvider());    
+}
