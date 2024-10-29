@@ -15,3 +15,12 @@ const auth = getAuth(app);  // get the auth object from the app
 export function signInWithGoogle() {
     return signInWithGoogle(auth, new GoogleAuthProvider());    
 }
+
+export function signOut() {
+    return auth.signOut(auth);
+}
+
+export function onAuthStateChangedHelper(callback: (user: User | null) => void){
+    return onAuthStateChangedHelper(auth, callback);
+}
+
