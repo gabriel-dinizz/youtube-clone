@@ -4,61 +4,77 @@ import ffmpeg from 'fluent-ffmpeg';
 
 const storage = new Storage();
 
-const rawVideoBucketName = 'youtube-clone-raw-videos';
-const processedVideoBucketName = 'youtube-clone-processed-videos';
+const RAW_VIDEO_BUCKET = 'youtube-clone-raw-videos';
+const PROCESSED_VIDEO_BUCKET = 'youtube-clone-processed-videos';
 
-const localFilePath = './video.mp4';
-const localFilePathProcessed = './video_processed.mp4';
-const localRawVideoPath = './raw_videos';
+const LOCAL_RAW_VIDEO_PATH = './raw_videos';
+const LOCAL_PROCESSED_VIDEO_PATH = './processed_videos';
 
-// Creates local directories for the raw and processed videos
-export function createLocalDirectories() {
-    ensureDirectoryExistence(localFilePath);
-    ensureDirectoryExistence(localFilePathProcessed);
+const paths = [LOCAL_RAW_VIDEO_PATH, LOCAL_PROCESSED_VIDEO_PATH];
+
+// Utility function for logging
+function log(message) {
+    console.log(`[Video Processor]: ${message}`);
 }
 
-export function detVideo(rawVideoName, processedVideoName) {
+// Ensure directories exist
+export function createLocalDirectories() {
+    paths.forEach(ensureDirectoryExistence);
+}
+
+export function processVideo(rawVideoName, processedVideoName) {
     return new Promise((resolve, reject) => {
-        ffmpeg(`${localRawVideoPath}/${rawVideoName}`)
-            .outputOptions("vf", "scale=1:360") // 360p
-            .on("end", function () {
-                console.log("Processing finished!");
+        const inputPath = `${LOCAL_RAW_VIDEO_PATH}/${rawVideoName}`;
+        const outputPath = `${LOCAL_PROCESSED_VIDEO_PATH}/${processedVideoName}`;
+
+        ffmpeg(inputPath)
+            .outputOptions("vf", "scale=1:360") // 360p scaling
+            .on("end", () => {
+                log(`Processing finished for ${rawVideoName}`);
                 resolve();
             })
-            .on("error", function (err) {
-                console.log("Error: ", err);
+            .on("error", (err) => {
+                log(`Error processing video ${rawVideoName}: ${err.message}`);
                 reject(err);
             })
-            .save(`${localFilePathProcessed}/${processedVideoName}`);
+            .save(outputPath);
     });
 }
 
 export async function downloadRawVideo(fileName) {
-    await storage.bucket(rawVideoBucketName)
-        .file(fileName)
-        .download({
-            destination: `${localRawVideoPath}/${fileName}`,
-        });
-
-    console.log(`gs://${rawVideoBucketName}/${fileName} downloaded to ${localRawVideoPath}/${fileName}.`);
+    try {
+        await storage.bucket(RAW_VIDEO_BUCKET)
+            .file(fileName)
+            .download({
+                destination: `${LOCAL_RAW_VIDEO_PATH}/${fileName}`,
+            });
+        log(`Downloaded ${fileName} to ${LOCAL_RAW_VIDEO_PATH}`);
+    } catch (err) {
+        log(`Error downloading ${fileName}: ${err.message}`);
+        throw err;
+    }
 }
 
 export async function uploadProcessedVideo(fileName) {
-    const bucket = storage.bucket(processedVideoBucketName);
+    const filePath = `${LOCAL_PROCESSED_VIDEO_PATH}/${fileName}`;
+    const bucket = storage.bucket(PROCESSED_VIDEO_BUCKET);
 
-    // Upload the video to bucket
-    await bucket.upload(`${localFilePathProcessed}/${fileName}`);
-
-    await bucket.file(fileName).makePublic(); // Make the video public
-    console.log(`File uploaded to gs://${processedVideoBucketName}/${fileName}`);
+    try {
+        await bucket.upload(filePath);
+        await bucket.file(fileName).makePublic();
+        log(`Uploaded and made public: ${fileName} in ${PROCESSED_VIDEO_BUCKET}`);
+    } catch (err) {
+        log(`Error uploading ${fileName}: ${err.message}`);
+        throw err;
+    }
 }
 
 export function deleteRawVideo(fileName) {
-    return deleteFile(`${localRawVideoPath}/${fileName}`);
+    return deleteFile(`${LOCAL_RAW_VIDEO_PATH}/${fileName}`);
 }
 
 export function deleteProcessedVideo(fileName) {
-    return deleteFile(`${localFilePathProcessed}/${fileName}`);
+    return deleteFile(`${LOCAL_PROCESSED_VIDEO_PATH}/${fileName}`);
 }
 
 function deleteFile(filePath) {
@@ -66,23 +82,24 @@ function deleteFile(filePath) {
         if (fs.existsSync(filePath)) {
             fs.unlink(filePath, (err) => {
                 if (err) {
-                    console.error(`Failed to delete file at ${filePath}`, err);
+                    log(`Failed to delete file at ${filePath}: ${err.message}`);
                     reject(err);
                 } else {
-                    console.log(`File deleted at ${filePath}`);
+                    log(`Deleted file at ${filePath}`);
                     resolve();
                 }
             });
         } else {
-            console.log(`File not found at ${filePath}, skipping delete.`);
+            log(`File not found at ${filePath}, skipping delete.`);
             resolve();
         }
     });
 }
 
-function ensureDirectoryExistence(filePath) {
-    if (!fs.existsSync(filePath)) {
-        fs.mkdirSync(filePath, { recursive: true }); // recursive: true creates nested directories
-        console.log(`Directory created at ${filePath}`);
+function ensureDirectoryExistence(path) {
+    if (!fs.existsSync(path)) {
+        fs.mkdirSync(path, { recursive: true });
+        log(`Created directory at ${path}`);
     }
 }
+
